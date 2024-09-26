@@ -19,6 +19,8 @@ from django.urls import path
 
 from blog import views
 
+from django.contrib.auth import views as auth_views
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     # path('blog/',views.blog_home, name='blog_home'),
@@ -27,4 +29,7 @@ urlpatterns = [
     path('blog/<int:pk>/', views.post_detail, name='post_detail'),
     path('blog/<int:pk>/edit/', views.post_edit, name='post_edit'),
     path('blog/<int:pk>/delete/', views.post_delete, name='post_delete'),
+    path('login/',auth_views.LoginView.as_view(template_name='blog/login.html'), name='login'),
+    path('register/', views.register, name='register'),
+    path('logout/', auth_views.LogoutView.as_view(), name='logout')
 ]
