@@ -1,6 +1,11 @@
 <h1>{{ post.title }}</h1>
 <p>{{ post.content }}</p>
 
+<h3>Post author is </h3>
+<p>{{post.author}}</p>
+
+<span>Created at</span>
+<p>{{post.created_at}}</p>
 <h2>Comments</h2>
 <ul>
     {% for comment in comments %}

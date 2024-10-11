@@ -100,3 +100,8 @@ def register(request):
         form = RegisterForm()
     
     return render(request, 'blog/register.html', {'form': form})
+
+
+def optimized_post_list(request):
+    posts = Post.objects.all().prefetch_related('comments').select_related('author')
+    return render(request, 'blog/optimized_post_list.html', {'posts': posts})

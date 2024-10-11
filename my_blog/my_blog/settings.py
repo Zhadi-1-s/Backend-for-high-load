@@ -37,7 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'blog'
+    'blog',
+    'accounts'
 ]
 
 MIDDLEWARE = [
@@ -74,6 +75,8 @@ WSGI_APPLICATION = 'my_blog.wsgi.application'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases

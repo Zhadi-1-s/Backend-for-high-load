@@ -24,6 +24,7 @@ from django.contrib.auth import views as auth_views
 urlpatterns = [
     path('admin/', admin.site.urls),
     # path('blog/',views.blog_home, name='blog_home'),
+    path('',views.post_list, name='post_list'),
     path('blog/', views.post_list, name='post_list'),
     path('blog/create', views.post_create, name= 'post_form'),
     path('blog/<int:pk>/', views.post_detail, name='post_detail'),
