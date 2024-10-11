@@ -21,7 +21,7 @@ def blog_home(request):
     return HttpResponse("Hello, Blog!")
 
 def post_list(request):
-    posts = Post.objects.all().order_by('-created_at')
+    posts = Post.objects.all().order_by('-created_at').select_related('author').prefetch_related('tags')
     paginator = Paginator(posts, 5)  # 5 posts per page
 
     page_number = request.GET.get('page')
@@ -70,7 +70,8 @@ def post_edit(request, pk):
             form.save()
             return redirect('post_detail', pk=post.pk)
     else:
-        form = PostForm(instance=post)
+        initial_tags = ', '.join([tag.name for tag in post.tags.all()])
+        form = PostForm(instance=post, initial={'tags': initial_tags})
     return render(request, 'blog/post_form.html', {'form': form})
 
 @login_required
@@ -104,4 +105,16 @@ def register(request):
 
 def optimized_post_list(request):
     posts = Post.objects.all().prefetch_related('comments').select_related('author')
+    return render(request, 'blog/optimized_post_list.html', {'posts': posts})
+
+DEBUG = True
+from django.db import connection
+
+def optimized_post_list_second(request):
+    posts = Post.objects.all().prefetch_related('comments').select_related('author')
+    for post in posts:
+        print(post.title, post.author.username)
+        for comment in post.comments.all():
+            print('-', comment.content)
+    print(connection.queries)
     return render(request, 'blog/optimized_post_list.html', {'posts': posts})
