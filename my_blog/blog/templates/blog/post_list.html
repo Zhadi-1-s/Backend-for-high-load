@@ -6,6 +6,9 @@
 </head>
 <body>
     <h1>Blog Posts</h1>
+    
+    <p>{{ server_info }}</p>
+
     {% if user.is_authenticated %}
         <p>Welcome, {{ user.username }}! <a href="{% url 'logout' %}">Logout</a></p>
         <p><a href="{% url 'post_form' %}">Create New Post</a></p>

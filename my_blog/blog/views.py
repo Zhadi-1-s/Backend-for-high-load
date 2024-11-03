@@ -17,10 +17,16 @@ from django.core.paginator import Paginator
 
 from .forms import CommentForm
 
+from django.views.decorators.cache import cache_page
+from django.core.cache import cache
+
 def blog_home(request):
     return HttpResponse("Hello, Blog!")
 
+
+@cache_page(60) 
 def post_list(request):
+    server_info = f"Served by Server 1 (8001)" if request.get_host() == "127.0.0.1:8001" else "Served by Server 2 (8002)"
     posts = Post.objects.all().order_by('-created_at').select_related('author').prefetch_related('tags')
     paginator = Paginator(posts, 5)  # 5 posts per page
 
@@ -30,6 +36,14 @@ def post_list(request):
 
 def post_detail(request, pk):
     post = get_object_or_404(Post, pk=pk)
+
+    comment_count_cache_key = f'comment_count_post_{post.pk}'
+    comment_count = cache.get(comment_count_cache_key)
+    
+    if comment_count is None:
+        comment_count = post.comments.count()
+        cache.set(comment_count_cache_key, comment_count, timeout=60)
+
     comments = post.comments.all()
     
     if request.method == 'POST':
@@ -39,6 +53,9 @@ def post_detail(request, pk):
             comment.post = post
             comment.author = request.user
             comment.save()
+
+            cache.delete(comment_count_cache_key)
+            
             return redirect('post_detail', pk=post.pk)
     else:
         comment_form = CommentForm()
@@ -118,3 +135,63 @@ def optimized_post_list_second(request):
             print('-', comment.content)
     print(connection.queries)
     return render(request, 'blog/optimized_post_list.html', {'posts': posts})
+
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+from .models import KeyValueStore
+from .serializers import KeyValueStoreSerializer
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+@api_view(['POST'])
+def store_key_value(request):
+    serializer = KeyValueStoreSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        logger.debug("Key Value Get request")
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def retrieve_value(request, key):
+    try:
+        key_value = KeyValueStore.objects.get(key=key)
+        serializer = KeyValueStoreSerializer(key_value)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except KeyValueStore.DoesNotExist:
+        return Response({"error": "Key not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+
+
+import requests
+
+INSTANCES = ["http://localhost:8001", "http://localhost:8002", "http://localhost:8003"]
+
+def quorum_write(key, value, version):
+    confirmations = 0
+    for instance in INSTANCES:
+        try:
+            response = requests.post(f"{instance}/store/", json={"key": key, "value": value, "version": version})
+            if response.status_code == 201:
+                confirmations += 1
+            if confirmations >= (len(INSTANCES) // 2) + 1:
+                return True
+        except requests.RequestException:
+            continue
+    return False
+
+def quorum_read(key):
+    responses = []
+    for instance in INSTANCES:
+        try:
+            response = requests.get(f"{instance}/retrieve/{key}/")
+            if response.status_code == 200:
+                responses.append(response.json())
+        except requests.RequestException:
+            continue
+    if responses:
+        return max(responses, key=lambda x: x.get("version", 0))
+    return None

@@ -42,3 +42,17 @@ class Comment(models.Model):
 
     def __str__(self):
         return f'Comment by {self.author} on {self.post}'
+    
+
+
+class KeyValueStore(models.Model):
+    key = models.CharField(max_length=255, unique=True)
+    value = models.TextField()
+
+    
+class ReplicaRouter:
+    def db_for_read(self, model, **hints):
+        return 'replica'
+
+    def db_for_write(self, model, **hints):
+        return 'default'

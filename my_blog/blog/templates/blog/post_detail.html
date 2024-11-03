@@ -1,4 +1,8 @@
 <!-- blog/templates/blog/post_detail.html -->
+{% load cache %}
+
+<!-- blog/templates/blog/post_detail.html -->
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -44,6 +48,18 @@
     {% else %}
         <p><a href="{% url 'login' %}">Login</a> to leave a comment.</p>
     {% endif %}
+
+    <!-- Example of Template Fragment Caching for Most Recent Comments -->
+    <h2>Most Recent Comments</h2>
+    {% cache 60 "most_recent_comments_%s" %}
+        <ul>
+            {% for comment in comments|slice:":5" %}
+                <li><strong>{{ comment.author.username }}</strong> on {{ comment.created_at }}:<br>{{ comment.content }}</li>
+            {% empty %}
+                <li>No comments yet.</li>
+            {% endfor %}
+        </ul>
+    {% endcache %}
 
     <p><a href="{% url 'post_list' %}">Back to Posts</a></p>
 </body>
